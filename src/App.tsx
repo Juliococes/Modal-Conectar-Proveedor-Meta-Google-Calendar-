@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   MessageSquare, 
   Calendar, 
@@ -122,6 +122,9 @@ const ConnectProviderModal: React.FC<ConnectProviderModalProps> = ({
   const [connectionStatus, setConnectionStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  // Refs for accessibility
+  const firstCardRef = useRef<HTMLButtonElement>(null);
+
   // Reset state when modal opens
   useEffect(() => {
     if (open) {
@@ -130,6 +133,11 @@ const ConnectProviderModal: React.FC<ConnectProviderModalProps> = ({
       setIsConnecting(false);
       setConnectionStatus('idle');
       setErrorMsg(null);
+      
+      // Focus first card after a short delay to allow animation
+      setTimeout(() => {
+        firstCardRef.current?.focus();
+      }, 100);
     }
   }, [open]);
 
@@ -188,26 +196,26 @@ const ConnectProviderModal: React.FC<ConnectProviderModalProps> = ({
       <Dialog.Portal>
         <Dialog.Backdrop className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50" />
         <Dialog.Popup 
-          className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[95%] max-w-lg bg-card-bg border border-border-subtle rounded-2xl shadow-2xl z-50 overflow-hidden focus:outline-none"
+          className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[95%] max-w-lg bg-card-bg border border-border-subtle rounded-2xl shadow-2xl z-50 overflow-hidden focus:outline-none sm:h-auto h-[100dvh] sm:rounded-2xl rounded-none flex flex-col"
           aria-labelledby="modal-title"
         >
           {/* Progress Bar */}
-          <div className="h-1 w-full bg-white/5">
+          <div className="h-1 w-full bg-white/5 sticky top-0 z-10">
             <div 
-              className="h-full bg-[#167272] transition-all duration-500 ease-out"
+              className="h-full bg-primary transition-all duration-500 ease-out"
               style={{ width: `${(step / 3) * 100}%` }}
               aria-hidden="true"
             />
           </div>
 
-          <div className="p-8 overflow-hidden">
-            <div className="flex justify-between items-center mb-6">
+          <div className="p-8 overflow-hidden flex-1 flex flex-col">
+            <div className="flex justify-between items-center mb-6 sticky top-0 bg-card-bg z-10">
               <div className="flex items-center gap-2" aria-live="polite">
-                <span className="text-xs font-medium text-[#888] uppercase tracking-wider">
+                <span className="text-xs font-bold text-text-secondary uppercase tracking-widest">
                   Paso {step} de 3
                 </span>
               </div>
-              <Dialog.Close className="text-[#888] hover:text-white transition-colors p-1" aria-label="Cerrar modal">
+              <Dialog.Close className="text-text-secondary hover:text-white transition-colors p-1 rounded-full hover:bg-white/5" aria-label="Cerrar modal">
                 <X size={20} />
               </Dialog.Close>
             </div>
@@ -225,7 +233,7 @@ const ConnectProviderModal: React.FC<ConnectProviderModalProps> = ({
                 <div className="w-1/3 h-full flex-shrink-0">
                   <h2 id="modal-title" className="text-xl font-semibold mb-4 text-white">Selecciona un proveedor</h2>
                   <div className="grid gap-3">
-                    {availableProviders.map((p) => (
+                    {availableProviders.map((p, idx) => (
                       <div key={p.id} className="relative">
                         {p.status === 'connected' ? (
                           <div className="flex items-center justify-between p-4 rounded-xl border border-border-subtle bg-white/[0.02] opacity-60">
@@ -249,11 +257,12 @@ const ConnectProviderModal: React.FC<ConnectProviderModalProps> = ({
                           </div>
                         ) : (
                           <button
+                            ref={idx === 0 ? firstCardRef : null}
                             onClick={() => {
                               setSelectedProvider(p);
                               handleStepChange(2);
                             }}
-                            className="w-full flex items-center justify-between p-4 rounded-xl border border-border-subtle bg-white/[0.02] hover:border-primary hover:bg-primary/5 transition-all text-left group scale-100 active:scale-[0.98]"
+                            className="w-full flex items-center justify-between p-4 rounded-xl border border-border-subtle bg-white/[0.02] hover:border-primary hover:bg-primary/5 transition-all text-left group scale-100 active:scale-[0.98] focus:ring-2 focus:ring-primary focus:outline-none"
                             aria-label={`Conectar ${p.name}`}
                           >
                             <div className="flex items-center gap-4">
@@ -325,7 +334,7 @@ const ConnectProviderModal: React.FC<ConnectProviderModalProps> = ({
                         </div>
                       )}
 
-                      <div className="mt-auto grid grid-cols-[1fr_2fr] gap-3">
+                      <div className="mt-auto grid grid-cols-[1fr_2fr] gap-3 pt-4">
                         <button 
                           onClick={() => handleStepChange(1)}
                           className="py-3 rounded-lg border border-border-subtle text-white font-medium hover:bg-white/5 transition-colors"
@@ -334,9 +343,31 @@ const ConnectProviderModal: React.FC<ConnectProviderModalProps> = ({
                         </button>
                         <button 
                           onClick={handleAuthorize}
-                          className="py-3 rounded-lg bg-primary text-white font-semibold hover:bg-primary-hover transition-colors flex items-center justify-center gap-2"
+                          className="py-3 rounded-lg bg-primary text-white font-semibold hover:bg-primary-hover transition-colors flex items-center justify-center gap-2 active:scale-[0.98]"
                         >
                           Autorizar en {selectedProvider.name}
+                        </button>
+                      </div>
+
+                      {/* Simulation Controls (for preview purposes) */}
+                      <div className="mt-4 flex justify-center gap-4 border-t border-white/5 pt-4">
+                        <button 
+                          onClick={() => simulateConnection(true)} 
+                          className="text-[10px] text-text-secondary hover:text-error transition-colors uppercase tracking-widest font-bold"
+                        >
+                          Simular fallo
+                        </button>
+                        <button 
+                          onClick={() => {
+                            setIsConnecting(true);
+                            setTimeout(() => {
+                              setIsConnecting(false);
+                              setErrorMsg("Sin conexión. Reintenta en unos segundos.");
+                            }, 1000);
+                          }} 
+                          className="text-[10px] text-text-secondary hover:text-error transition-colors uppercase tracking-widest font-bold"
+                        >
+                          Simular error red
                         </button>
                       </div>
                     </div>
@@ -409,13 +440,11 @@ const ConnectProviderModal: React.FC<ConnectProviderModalProps> = ({
             </div>
 
             {/* FOOTER LINKS */}
-            {step < 3 && (
-              <div className="mt-8 pt-4 border-t border-white/5 flex justify-center gap-6 text-[10px] text-[#888] uppercase tracking-widest font-bold">
-                <a href="#" className="hover:text-white transition-colors">Privacidad</a>
-                <a href="#" className="hover:text-white transition-colors">Condiciones</a>
-                <a href="#" className="hover:text-white transition-colors flex items-center gap-1">Soporte <ExternalLink size={10} /></a>
-              </div>
-            )}
+            <div className="mt-auto pt-6 border-t border-white/5 flex justify-center gap-6 text-[10px] text-text-secondary uppercase tracking-widest font-bold">
+              <a href="#" className="hover:text-white transition-colors">Política de privacidad</a>
+              <a href="#" className="hover:text-white transition-colors">Condiciones</a>
+              <a href="#" className="hover:text-white transition-colors flex items-center gap-1">Soporte <ExternalLink size={10} /></a>
+            </div>
           </div>
         </Dialog.Popup>
       </Dialog.Portal>
