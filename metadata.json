@@ -1,0 +1,6 @@
+{
+  "name": "SurGira Connect",
+  "description": "Connect Provider Modal for SurGira CCaaS platform with simulated OAuth flow.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
